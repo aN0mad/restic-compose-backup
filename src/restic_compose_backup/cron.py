@@ -8,6 +8,9 @@
 # │ │ │ │ │
 # │ │ │ │ │
 # * * * * * command to execute
+#
+# Supports special characters: * , - /
+# Does not support: @yearly, @monthly, @weekly, @daily, @hourly, @reboot
 """
 QUOTE_CHARS = ['"', "'"]
 
@@ -29,41 +32,63 @@ def generate_crontab(config):
 
 
 def validate_schedule(schedule: str):
-    """Validate crontab format"""
+    """Validate crontab format with support for / , - modifiers"""
     parts = schedule.split()
     if len(parts) != 5:
         return False
 
-    for p in parts:
-        if p != '*' and not p.isdigit():
-            return False
+    validators = [
+        (0, 59),   # Minute
+        (0, 23),   # Hour
+        (1, 31),   # Day of month
+        (1, 12),   # Month
+        (0, 6),    # Day of week
+    ]
 
-    minute, hour, day, month, weekday = parts
-    try:
-        validate_field(minute, 0, 59)
-        validate_field(hour, 0, 23)
-        validate_field(day, 1, 31)
-        validate_field(month, 1, 12)
-        validate_field(weekday, 0, 6)
-    except ValueError:
-        return False
+    for part, (min_val, max_val) in zip(parts, validators):
+        if not validate_field(part, min_val, max_val):
+            return False
 
     return True
 
 
-def validate_field(value, min, max):
-    if value == '*':
-        return
+def validate_field(field: str, min_val: int, max_val: int):
+    """Validate a crontab field string with modifiers like *, -, /, ,"""
+    # Split on commas first: e.g. 1,5,10-15/2
+    for segment in field.split(','):
+        if segment == '*':
+            continue
+        # Handle step values: */5 or 1-10/2
+        if '/' in segment:
+            base, step = segment.split('/')
+            if not step.isdigit() or int(step) <= 0:
+                return False
+        else:
+            base = segment
 
-    i = int(value)
-    return min <= i <= max
+        if base == '*':
+            continue
+        elif '-' in base:
+            start, end = base.split('-')
+            if not (start.isdigit() and end.isdigit()):
+                return False
+            start, end = int(start), int(end)
+            if not (min_val <= start <= end <= max_val):
+                return False
+        elif base.isdigit():
+            val = int(base)
+            if not (min_val <= val <= max_val):
+                return False
+        else:
+            return False
+
+    return True
 
 
 def strip_quotes(value: str):
     """Strip enclosing single or double quotes if present"""
-    if value[0] in QUOTE_CHARS:
+    if value and value[0] in QUOTE_CHARS:
         value = value[1:]
-    if value[-1] in QUOTE_CHARS:
+    if value and value[-1] in QUOTE_CHARS:
         value = value[:-1]
-
     return value

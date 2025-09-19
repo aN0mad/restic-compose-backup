@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "restic-compose-backup"
+version = "0.7.2"
+description = ""
+authors = ["Einar Forselv <eforselv@gmail.com>"]
+license = ""
+homepage = "https://github.com/ZettaIO/restic-compose-backup"
+repository = "https://github.com/ZettaIO/restic-compose-backup"
+packages = [
+    { include = "restic_compose_backup" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+docker = "~6.1.3"
+
+[tool.poetry.scripts]
+restic-compose-backup = "restic_compose_backup.cli:main"
+rcb = "restic_compose_backup.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

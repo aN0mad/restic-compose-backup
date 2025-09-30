@@ -4,7 +4,8 @@ RUN apk update && apk add python3 \
     dcron \
     mariadb-client \
     postgresql-client \
-    mariadb-connector-c-dev 
+    mariadb-connector-c-dev \ 
+    bash
 
 ADD . /restic-compose-backup
 WORKDIR /restic-compose-backup
